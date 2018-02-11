@@ -11,6 +11,7 @@ library(texreg)
 library(psych)
 library(MASS)
 library(lubridate)
+library(Rmisc)
 set.seed(424)
 
 
@@ -65,14 +66,23 @@ Through this analysis, we can see that colored backgrounds on poems tend to incr
 
 However, we must not extrapolate too much from this sample. While it would certainly be intuitive, notice that we have **not** learned that this works on all social media platforms. For example, we have no solid evidence that adding color backgrounds would increase interactions on, for example, Twitter or Instagram. Given the similar "news feed" nature of these sites it might be intuitive to think so, but if the Poetry Foundation were to consider making this a cross-platform engagement strategy we would advice another experiment be carried out. In further experiments, we could also test extensions of this claim - perhaps *different* colors have different effects. For example, one might assume that more muted colors could be less effective than brighter colors, for example.
 
-```{r}
-
-```
-
 ## Question 4
 
 **Include a table of results and an illustration of the average treatment effect. You could (a) show the effect with error bars or (b) show fitted(predicted) values for each condition, with error bars for the treatment (color). If you show fitted values, document details of any covariates(predictors) used to generate the fitted values (such as weekend).**
 
+```{r}
+stats <- summarySE(poems, measurevar="interactions", groupvars="condition")
+print(stats)
+```
+```{r}
+ggplot(stats, aes(x=condition, y=interactions)) +
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=interactions-se, ymax=interactions+se),
+                width=0.2, position=position_dodge(0.9))
+```
+
 ## Question 5
 
 **Write a paragraph that builds on this finding in the attempt to convince the foundation to do more evaluation, with social media, and more broadly in the organization.**
+
+Clearly, posting poems with eye-catching colors has the potential to significantly increase engagement on social media. The initial evaluation, based entirely on data gathered from Facebook, demonstrates promising results. In order to come to a more robust conclusion, more experimentation should be done by the foundation in the future. These experiments could involve using other social media sites such as Twitter and Instagram, testing the efficacy of specific colors, and matching the color to the mood of the poem or the time of day posted. By tweaking small details from experiment to experiment, the foundation can determine the optimal combination to maximize engagement and ensure that each poem reaches as many people as possible. 
