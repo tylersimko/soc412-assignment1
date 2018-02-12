@@ -41,7 +41,7 @@ poems$condition <- relevel(poems$condition, ref="Text")
 
 **Write a paragraph describing the experiment design, including the intervention being tested, the outcome measures being used, how long the study was conducted, and how many poems were included.**
 
-The experimental design is a typical randomized field experiment. The primary research question seeks to discover how to increase online engagement with poetry. Specifically, they plan to test whether "a colored background [on poetry] increase[s] Facebook interactions on average" (SOC412 slides) in order to fulfill the request of Ruth Lilly's donation. The design is simple: over the course of 90 days, they plan to randomize whether or not a posted poem on their Facebook page has a colored background or not. The outcome measure is the number of "likes, shares, and comments that each poem receives over a 24 hour period of time" (SOC412, assignment 1 write-up). This means that a total of 90 poems were posted, all of similar length and at the same time each day.
+The experimental design is a typical randomized field experiment. The primary research question seeks to discover how to increase online engagement with poetry. Specifically, they plan to test whether "a colored background [on poetry] increase[s] Facebook interactions on average" (SOC412 slides) in order to fulfill the request of Ruth Lilly's donation. The design is simple: over the course of 90 days, it was randomized whether or not a posted poem on their Facebook page had a colored background or not. The outcome measure is the number of "likes, shares, and comments that each poem receives over a 24 hour period of time" (SOC412, assignment 1 write-up). This means that a total of 90 poems were posted, all of similar length and at the same time each day.
 
 ## Question 2
 
@@ -52,19 +52,37 @@ Let's analyze the data:
 ```{r}
 summary(poems$interactions) ## find range of d.v.
 tapply(poems$interactions, poems$condition, mean) ## means of each condition
-lm(interactions ~ condition, data = poems)[1] ## effect size
+lm(interactions ~ condition, data = poems) ## effect size
 summary(lm(interactions ~ condition, data = poems))
 ```
 
-We can see that the range of interactions is rather large. The minimum number of interactions that a single poem received is 0, while the maximum is 111. This maximum seems to be an outlier, since the mean (16.79) and median (9.5) were much lower. We can find the means for each condition by subsetting and taking means separately: the average number of interactions for a text post is 12.4, while the average number for color posts is 21.18. This means that the average treatment effect is $21.18 - 12.4 = 8.78$, an increase of 8.78 interactions on average for adding a color background. This effect is significant at an $\alpha = 0.05$ threshold - we see a p-value of $0.0401$.
+We can see that the range of interactions is rather large. The minimum number of interactions that a single poem received is 0, while the maximum is 111. This maximum seems to be an outlier, since the mean (16.79) and median (9.5) were much lower. We can find the means for each condition by subsetting and taking means separately: the average number of interactions for a text post is 12.4 (same as the intercept), while the average number for color posts is 21.18 (intercept + $\beta_{interactions}$). This means that the average treatment effect is $21.18 - 12.4 = 8.78$, an increase of 8.78 interactions on average for adding a color background. This effect is significant at an $\alpha = 0.05$ threshold - we see a p-value of $0.0401$.
+
+However, as discussed in class, recall that linear regression comes with an assumption of error normality. Let's do some simple exploratory data analysis to see if this holds:
+
+```{r}
+hist(poems$interactions)
+```
+
+Doesn't look very normal to us! We can try to mitigate this by taking the log of the dependent variable and replicating our analysis:
+
+```{r}
+summary(lm(log1p(interactions) ~ condition, data = poems))
+```
+
+Our results support our initial analysis - it certainly seems like there is a positive effect on interactions from including a colored background (in fact, our p-value shrunk). Since we took the log of our dependent variable, in order to determine our effect size we'll need to 'undo' the log by exponentiating our coefficient: $e^{0.8963} = 2.45$. This means that a colored background leads to about over 2 times more (as in, a multiplicative increase in rate) interactions than a text background.
+
+Of course, this level of statistical detail shoud not be included in a briefing with poetry experts. We'll keep this to the SOC412 crowd and explain more simply below.
 
 ## Question 3
 
 **Write a paragraph that suggests a course of action, contextualizing the findings in a way that the organization would normally think about, such as the outcome per month of choosing the course of action you suggest. For example: "If the Poetry Foundation's social media account were to always use <colored/text> backgrounds...." Make sure to reflect on the limitations of the sample, which is drawn from the foundation's page on a single social media platform.**
 
-Through this analysis, we can see that colored backgrounds on poems tend to increase interactions and engagement on Facebook. There are certainly some lessons to be learned here, but we must not take it too far. We saw that adding a colored background, as opposed to just posting a text poem, increased the number of likes, shares, and comments by about 8. As the prompt suggests, we can put this in monthly terms: "if the Poetry Foundation's Facebook account were to always use colored backgrounds," this experiment suggests that they would receive approximately $(8.5 * 30) \sim 250$ more Facebook interactions (assuming a 30-day month). This even understates the effect that we saw, since our effect was slightly larger than 8. However, it's often easier to use round numbers when explaining intervention effects to a non-technical audience.
+Through this analysis, we can see that colored backgrounds on poems tend to increase interactions and engagement on your Facebook feed. There are certainly some lessons to be learned here, but we must not take it too far. We saw that adding a colored background, as opposed to just posting a text poem, increased the number of likes, shares, and comments by about 8. As the prompt suggests, we can put this in monthly terms: "if the Poetry Foundation's Facebook account were to always use colored backgrounds," this experiment suggests that they would receive approximately $(8.5 * 30) \sim 250$ more Facebook interactions (assuming a 30-day month) per month. This even understates the effect that we saw, since our effect was slightly larger than 8. We say this since it's often easier to use round numbers when explaining intervention effects to a non-technical audience.
 
-However, we must not extrapolate too much from this sample. While it would certainly be intuitive, notice that we have **not** learned that this works on all social media platforms. For example, we have no solid evidence that adding color backgrounds would increase interactions on, for example, Twitter or Instagram. Given the similar "news feed" nature of these sites it might be intuitive to think so, but if the Poetry Foundation were to consider making this a cross-platform engagement strategy we would advice another experiment be carried out. In further experiments, we could also test extensions of this claim - perhaps *different* colors have different effects. For example, one might assume that more muted colors could be less effective than brighter colors, for example.
+However, we must not extrapolate too much from this sample. While it would certainly be intuitive, notice that we have **not** learned that this works on all social media platforms. For example, we have no solid evidence that adding color backgrounds would increase interactions on, for example, Twitter or Instagram. Given the similar "news feed" nature of these sites it might be intuitive to think so, but if the Poetry Foundation were to consider making this a cross-platform engagement strategy we would advice another experiment be carried out. In further experiments, we could also test extensions of this claim - perhaps *different* colors have different effects. For example, one might assume that more muted colors could be less effective than brighter colors, for example. Also, this says nothing about how to **grow** your audience, only how to increase interactions among those already following your posts on Facebook.
+
+However, when deciding how to post poems on Facebook in the future, adding a colored background certainly seems like a safe bet to get more online interactions.
 
 ## Question 4
 
@@ -78,7 +96,7 @@ print(stats)
 ggplot(stats, aes(x=condition, y=interactions)) +
   geom_bar(position=position_dodge(), stat="identity") +
   geom_errorbar(aes(ymin=interactions-se, ymax=interactions+se),
-                width=0.2, position=position_dodge(0.9))
+                width=0.2, position=position_dodge(0.9)) + ggtitle("Average interactions by treatment condition")
 ```
 
 ## Question 5
