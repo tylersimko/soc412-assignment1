@@ -115,67 +115,6 @@ simulate.study <- function(i, sample.size, control.mean, treat.mean){
 # sim <- simulate.study(1, sample.size, control.num.comments, control.num.comments * 1.1)
 # sim$power.sim.treat.effect
 
-####################################
-## SUMMARY DATA                   ##
-####################################
-
-### TIME ELAPSED
-max(date(postsData$created.utc)) - min(date(postsData$created.utc))
-
-## POSTS PER DAY
-nrow(postsData) / as.numeric(max(date(postsData$created.utc)) - min(date(postsData$created.utc)))
-
-## POSTS REMOVED PER DAY
-nrow(subset(postsData, visible==0)) / as.numeric(max(date(postsData$created.utc)) - min(date(postsData$created.utc)))
-
-####################################
-## UNIVARIATE ANALYSIS            ##
-####################################
-
-## NUMBER OF COMMENTS
-summary(posts$num.comments)
-hist(posts$num.comments)
-hist(log1p(posts$num.comments))
-
-## TODO: NUMBER OF COMMENTS REMOVED
-
-## TODO: NUMBER OF NEWCOMER COMMENTS
-
-## TODO: NUMBER OF NEWCOMER COMMENTS REMOVED
-
-####################################
-## BIVARIATE ANALYSIS             ##
-####################################
-corrplot(cor(posts[c('author.prev.participation', 'author.prev.posts', 'front_page', 
-                     'newcomer.comments', 'newcomer.comments.removed', 'num.comments',
-                     'num.comments.removed', 'visible')]))
-
-
-#########################################################
-### SIMULATE AND PLOT EXPERIMENTS WITH A SMALL SAMPLE  ##
-### WHERE THERE iS A DIFFERENCE BETWEEN MEANS          ##
-#########################################################
-num.models.small.effect <- 100
-mean.ctl.small.effect <- 10
-mean.treat.small.effect <- 10.2
-num.days <- 100
-
-poem.models.small <- simulate.study(1,num.days,mean.ctl.small.effect,mean.treat.small.effect)
-for(i in seq(2,num.models.small.effect)){
-  poem.models.small <- rbind(poem.models.small, simulate.study(i,num.days,mean.ctl.small.effect,mean.treat.small.effect))
-}
-
-## REPORT HOW MANY RESULTS WERE STATISTICALLY SIGNIFICANT
-paste(sprintf("%.01f", as.numeric(summary(poem.models.small$power.sim.significant)[['TRUE']])/nrow(poem.models.small)*100), 
-      "% results statistically significant", sep="")
-
-## SHOW STUDIES WHERE THE RESULT IS STATISTICALLY SIGNIFICANT
-ggplot(poem.models.small, aes(power.sim.significant, power.sim.treat.effect, color=power.sim.significant)) +
-  geom_jitter() +
-  theme_bw(base_size = 15, base_family = "Helvetica") +
-  ggtitle(paste(sprintf("%.0f", as.numeric(summary(poem.models.small$power.sim.significant)[['TRUE']])/nrow(poem.models.small)*100), 
-                "% results statistically significant\nin simulated experiments", sep=""))
-
 ##########################################################
 ### POWER ANALYSIS SHOWING HOW MANY OBSERVATIONS TO GET ##
 ### AN EIGHTY PERCENT CHANCE OF OBSERVING THE EFFECT    ##
@@ -184,15 +123,9 @@ ggplot(poem.models.small, aes(power.sim.significant, power.sim.treat.effect, col
 ### constants
 power.num.models <- 50
 
-power.mean.ctl.comments <- 10
-power.mean.treat.comments <- 10.1
-
-power.mean.ctl.newcomer <- 10
-power.mean.treat.newcomer <- 10.4
-
-power.max.num.days <- 600
-power.starting.num.days <- 12
-power.increase.num.days.by <- 12
+power.max.num.days <- 150
+power.starting.num.days <- 3
+power.increase.num.days.by <- 3
 
 ### power analysis function
 power.analysis <- function(i, sample.size, control.mean, treat.mean, num.models){
@@ -211,72 +144,36 @@ power.analysis <- function(i, sample.size, control.mean, treat.mean, num.models)
              mean.effect = mean.effect)
 }
 
-### run power analysis for number of comments
-p.analyses <- power.analysis(1,power.starting.num.days,power.mean.ctl.comments,power.mean.treat.comments,power.num.models)
-for(i in seq(power.starting.num.days/power.increase.num.days.by, power.max.num.days/power.increase.num.days.by)){
-  sample.size <- i*power.increase.num.days.by
-  p.analyses <- rbind(p.analyses, power.analysis(i,i*power.increase.num.days.by,power.mean.ctl.comments,power.mean.treat.comments,power.num.models))
-}
+### number of comments
+# power.mean.ctl.comments <- 10
+# effect.multiplier.comments <- 1.1
+# power.mean.treat.comments <- power.mean.ctl.comments * effect.multiplier.comments
+# 
+# p.analyses <- power.analysis(1,power.starting.num.days,power.mean.ctl.comments,power.mean.treat.comments,power.num.models)
+# for(i in seq(power.starting.num.days/power.increase.num.days.by, power.max.num.days/power.increase.num.days.by)){
+#   sample.size <- i*power.increase.num.days.by
+#   p.analyses <- rbind(p.analyses, power.analysis(i,i*power.increase.num.days.by,power.mean.ctl.comments,power.mean.treat.comments,power.num.models))
+# }
+# 
+# ggplot(p.analyses, aes(sample.size, pct.significant, color=pct.significant>=80)) +
+#   geom_point() +
+#   scale_y_continuous(breaks = round(seq(0,100, by = 10),1)) +
+#   theme_bw(base_size = 15, base_family = "Helvetica") +
+#   ggtitle("Total number of comments")
 
-### run power analysis for number of newcomer comments
+# ### number of newcomer comments
+power.mean.ctl.newcomer <- 10
+effect.multiplier.newcomer <- 1.38
+power.mean.treat.newcomer <- power.mean.ctl.newcomer * effect.multiplier.newcomer
+
 p.analyses <- power.analysis(1,power.starting.num.days,power.mean.ctl.newcomer,power.mean.treat.newcomer,power.num.models)
 for(i in seq(power.starting.num.days/power.increase.num.days.by, power.max.num.days/power.increase.num.days.by)){
   sample.size <- i*power.increase.num.days.by
   p.analyses <- rbind(p.analyses, power.analysis(i,i*power.increase.num.days.by,power.mean.ctl.comments,power.mean.treat.comments,power.num.models))
 }
 
-### PLOT THE RELATIONSHIP BETWEEN THE SAMPLE SIZE AND STATISTICAL POWER
 ggplot(p.analyses, aes(sample.size, pct.significant, color=pct.significant>=80)) +
   geom_point() +
   scale_y_continuous(breaks = round(seq(0,100, by = 10),1)) +
   theme_bw(base_size = 15, base_family = "Helvetica") +
-  ggtitle("The larger the sample size, the greater the chance of observing the effect")
-
-
-
-#######################################
-## EXAMPLE OF TAKING A RANDOM SAMPLE ##
-#######################################
-
-## EXAMPLE FOR TAKING A SAMPLE SMALLER THAN THE SOURCE
-posts.10k <-randomSample(posts, 10000)
-
-## EXAMPLE FOR TAKING A SAMPLE LARGER THAN THE SOURCE
-posts.80k <- randomSample(posts, 40000)
-posts.80k <- rbind(posts.80k, randomSample(posts, 40000))
-
-#######################################################
-## EXAMPLE OF AN ITERATION IN A POWER ANALYSIS       ##
-#######################################################
-
-## SETTINGS
-num.observations = 10000
-
-sim.posts <-randomSample(posts, num.observations)
-
-## GENERATE RANDOMIZATIONS
-randomizations <- blockrand(n=nrow(sim.posts), num.levels = 2, block.sizes = c(12,12), id.prefix='post', block.prefix='block',stratum='post')
-sim.posts$condition <- head(randomizations$treatment, nrow(sim.posts))
-
-## GENERATE AVERAGE TREATMENT EFFECT FOR NUM.COMMENTS
-
-## model log-transformed number of comments
-effect.multiplier = 1.5
-
-sim.posts$num.comments.effect <- 1
-sim.posts$num.comments.effect[sim.posts$condition=="B"] <- abs(rnorm(nrow(subset(sim.posts, condition=="B")), 
-                                                                     effect.multiplier))
-sim.posts$num.comments.sim <- sim.posts$num.comments * sim.posts$num.comments.effect
-
-## PLOT RELATIONSHIP BETWEEN SIMULATED NUMBER AND OBSERVED NUMBER
-#ggplot(sim.posts, aes(num.comments, num.comments.sim, color=condition)) +
-#  geom_jitter()
-
-## PLOT SIMULATED AVERAGE TREATMENT EFFECT
-#ggplot(sim.posts, aes(condition, log1p(num.comments.sim), color=condition)) +
-#  geom_violin()
-
-## ESTIMATE AVERAGE TREATMENT EFFECT ON LOG-TRANSFORMED VARIABLE
-summary(lm(log1p(num.comments.sim) ~ condition, data=sim.posts))
-
-
+  ggtitle("Total number of newcomer comments")
