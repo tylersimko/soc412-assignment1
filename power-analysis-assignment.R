@@ -5,7 +5,7 @@
 ## 3/2/18
 ###########################
 
-setwd("~/Dropbox/princeton/spring18/soc412/power-analysis/")
+# setwd("~/Dropbox/princeton/spring18/soc412/power-analysis/")
 
 ## LOAD LIBRARIES
 library(ggplot2)
@@ -75,7 +75,7 @@ set.seed(424)
 sample.size <- 1000
 simulate.study <- function(i, sample.size, control.mean, treat.mean){
   cat(".")
-  start.date <- "2017/01/01"
+  start.date <- "2017-08-10"
   posts <- data.frame(
     data = seq(as.Date(start.date), as.Date(start.date) + days(sample.size - 1), by = "day")
   )
@@ -112,8 +112,8 @@ simulate.study <- function(i, sample.size, control.mean, treat.mean){
              true.effect = treat.mean - control.mean)
 }
 
-sim <- simulate.study(1, sample.size, control.num.comments, control.num.comments * 1.1)
-sim$power.sim.treat.effect
+# sim <- simulate.study(1, sample.size, control.num.comments, control.num.comments * 1.1)
+# sim$power.sim.treat.effect
 
 ####################################
 ## SUMMARY DATA                   ##
@@ -180,13 +180,21 @@ ggplot(poem.models.small, aes(power.sim.significant, power.sim.treat.effect, col
 ### POWER ANALYSIS SHOWING HOW MANY OBSERVATIONS TO GET ##
 ### AN EIGHTY PERCENT CHANCE OF OBSERVING THE EFFECT    ##
 ##########################################################
+
+### constants
 power.num.models <- 50
-power.mean.ctl <- 10
-power.mean.treat <- 10.4
+
+power.mean.ctl.comments <- 10
+power.mean.treat.comments <- 10.1
+
+power.mean.ctl.newcomer <- 10
+power.mean.treat.newcomer <- 10.4
+
 power.max.num.days <- 600
 power.starting.num.days <- 12
 power.increase.num.days.by <- 12
 
+### power analysis function
 power.analysis <- function(i, sample.size, control.mean, treat.mean, num.models){
   print(paste("Sample Size:", sample.size, "Control.mean:", control.mean, "Treat.mean:", treat.mean))
   pm <- simulate.study(1,sample.size,control.mean, treat.mean)
@@ -203,10 +211,18 @@ power.analysis <- function(i, sample.size, control.mean, treat.mean, num.models)
              mean.effect = mean.effect)
 }
 
-p.analyses <- power.analysis(1,power.starting.num.days,power.mean.ctl,power.mean.treat,power.num.models)
+### run power analysis for number of comments
+p.analyses <- power.analysis(1,power.starting.num.days,power.mean.ctl.comments,power.mean.treat.comments,power.num.models)
 for(i in seq(power.starting.num.days/power.increase.num.days.by, power.max.num.days/power.increase.num.days.by)){
   sample.size <- i*power.increase.num.days.by
-  p.analyses <- rbind(p.analyses, power.analysis(i,i*power.increase.num.days.by,power.mean.ctl,power.mean.treat,power.num.models))
+  p.analyses <- rbind(p.analyses, power.analysis(i,i*power.increase.num.days.by,power.mean.ctl.comments,power.mean.treat.comments,power.num.models))
+}
+
+### run power analysis for number of newcomer comments
+p.analyses <- power.analysis(1,power.starting.num.days,power.mean.ctl.newcomer,power.mean.treat.newcomer,power.num.models)
+for(i in seq(power.starting.num.days/power.increase.num.days.by, power.max.num.days/power.increase.num.days.by)){
+  sample.size <- i*power.increase.num.days.by
+  p.analyses <- rbind(p.analyses, power.analysis(i,i*power.increase.num.days.by,power.mean.ctl.comments,power.mean.treat.comments,power.num.models))
 }
 
 ### PLOT THE RELATIONSHIP BETWEEN THE SAMPLE SIZE AND STATISTICAL POWER
