@@ -14,6 +14,7 @@ library(gmodels)
 library(texreg)
 library(rms)
 library(blockrand)
+library(lubridate)
 library(psych)
 
 ## CLEAR PROJECT
@@ -71,7 +72,7 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 set.seed(424)
 
 ## function to simulate a study
-sample.size <- nrow(posts)
+sample.size <- 1000
 simulate.study <- function(i, sample.size, control.mean, treat.mean){
   cat(".")
   start.date <- "2017/01/01"
@@ -88,14 +89,14 @@ simulate.study <- function(i, sample.size, control.mean, treat.mean){
   #  print(paste("Randomizations row count", nrow(randomizations)))
   
   ## randomly sample conidition A group
-  randomizations <- randomSample(posts, 22783)
+  randomizations <- randomSample(posts, sample.size / 2)
   ## which posts were selected for treatment
   conditionA <- row.names(randomizations)
-  coniditionB <- row.names(posts[row.names(posts) %in% conditionA,])
+  conditionB <- row.names(posts[row.names(posts) %in% conditionA,])
   posts$condition <- ifelse(row.names(posts) %in% conditionA, "A", "B")
   posts$interactions <- NA
-  posts$interactions[posts$condition=="A"] <- rnorm(22783, control.mean) 
-  posts$interactions[posts$condition=="B"] <- rnorm(22782, treat.mean) 
+  posts$interactions[posts$condition=="A"] <- rnorm(length(conditionA), control.mean) 
+  posts$interactions[posts$condition=="B"] <- rnorm(length(conditionB), treat.mean) 
   
   ## will log-transform for our homework
   m1 <- lm(log1p(interactions) ~ condition, data=posts)
@@ -111,7 +112,8 @@ simulate.study <- function(i, sample.size, control.mean, treat.mean){
              true.effect = treat.mean - control.mean)
 }
 
-sim <- simulate.study(1, nrow(posts), control.num.comments, control.num.comments * 1.1)
+sim <- simulate.study(1, sample.size, control.num.comments, control.num.comments * 1.1)
+sim$power.sim.treat.effect
 
 ####################################
 ## SUMMARY DATA                   ##
