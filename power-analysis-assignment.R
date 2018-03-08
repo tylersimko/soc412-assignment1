@@ -5,7 +5,7 @@
 ## 3/2/18
 ###########################
 
-# setwd("~/Dropbox/princeton/spring18/soc412/power-analysis/")
+setwd("~/Dropbox/princeton/spring18/soc412/power-analysis/")
 
 ## LOAD LIBRARIES
 library(ggplot2)
@@ -48,7 +48,37 @@ postsData <- read.csv("subreddit_posts.csv")
 postsData$is.selftext <- postsData$is.selftext == "True"
 postsData$weekend <- (postsData$weekday == 5 | postsData$weekday ==6)
 
-hist(log1p(postsData$num.comments))
+####################################
+## SUMMARY DATA                   ##
+####################################
+
+## avg. number of total comments
+mean(postsData$num.comments)
+
+## avg. newcomer comments
+mean(postsData$newcomer.comments)
+
+## distribution of post comments
+quantile(postsData$num.comments, seq(.1, 1, by = .1))
+quantile(postsData$newcomer.comments, seq(.1, 1, by = .1))
+
+## what would original effect mean for you?
+c(15,50) * 1.1
+c(0,1,2) * 1.38
+
+## how many posts w/ newcomer comments removed
+sum(table(postsData$newcomer.comments.removed)[-1]) / nrow(postsData)
+
+## what proportion of posts receive newcomer comments
+1 - nrow(subset(postsData, newcomer.comments == 0)) / nrow(postsData)
+
+## posts per day
+postsPerDay <- nrow(postsData) / 
+  as.numeric(max(date(postsData$created.utc)) - min(date(postsData$created.utc)))
+
+## POSTS REMOVED PER DAY
+nrow(subset(postsData, visible==0)) / as.numeric(max(date(postsData$created.utc)) - min(date(postsData$created.utc)))
+
 
 ## control mean
 control.num.comments <- mean(postsData$num.comments)
@@ -72,7 +102,9 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 set.seed(424)
 
 ## function to simulate a study
-sample.size <- 1000
+## use average posts per day
+sample.size <- postsPerDay
+
 simulate.study <- function(i, sample.size, control.mean, treat.mean){
   cat(".")
   start.date <- "2017-08-10"
@@ -84,9 +116,7 @@ simulate.study <- function(i, sample.size, control.mean, treat.mean){
   num.obvs = nrow(posts)
   posts$day.num <- seq(1, num.obvs)
   
-  # randomizations <- blockrand(n=num.obvs, num.levels = 2, block.sizes = c(4,4), id.prefix='post', block.prefix='block',stratum='post')
-  #  print(paste("Poem row count", nrow(poems)))
-  #  print(paste("Randomizations row count", nrow(randomizations)))
+  ## we noticed slow randomization code as well, but changed it before the GitHub update:
   
   ## randomly sample conidition A group
   randomizations <- randomSample(posts, sample.size / 2)
@@ -112,9 +142,6 @@ simulate.study <- function(i, sample.size, control.mean, treat.mean){
              true.effect = treat.mean - control.mean)
 }
 
-# sim <- simulate.study(1, sample.size, control.num.comments, control.num.comments * 1.1)
-# sim$power.sim.treat.effect
-
 ##########################################################
 ### POWER ANALYSIS SHOWING HOW MANY OBSERVATIONS TO GET ##
 ### AN EIGHTY PERCENT CHANCE OF OBSERVING THE EFFECT    ##
@@ -122,8 +149,7 @@ simulate.study <- function(i, sample.size, control.mean, treat.mean){
 
 ### constants
 power.num.models <- 50
-
-power.max.num.days <- 150
+power.max.num.days <- 365
 power.starting.num.days <- 3
 power.increase.num.days.by <- 3
 
@@ -145,21 +171,21 @@ power.analysis <- function(i, sample.size, control.mean, treat.mean, num.models)
 }
 
 ### number of comments
-# power.mean.ctl.comments <- 10
-# effect.multiplier.comments <- 1.1
-# power.mean.treat.comments <- power.mean.ctl.comments * effect.multiplier.comments
+power.mean.ctl.comments <- 10
+effect.multiplier.comments <- 1.1
+power.mean.treat.comments <- power.mean.ctl.comments * effect.multiplier.comments
 # 
-# p.analyses <- power.analysis(1,power.starting.num.days,power.mean.ctl.comments,power.mean.treat.comments,power.num.models)
-# for(i in seq(power.starting.num.days/power.increase.num.days.by, power.max.num.days/power.increase.num.days.by)){
-#   sample.size <- i*power.increase.num.days.by
-#   p.analyses <- rbind(p.analyses, power.analysis(i,i*power.increase.num.days.by,power.mean.ctl.comments,power.mean.treat.comments,power.num.models))
-# }
+p.analyses <- power.analysis(1,power.starting.num.days,power.mean.ctl.comments,power.mean.treat.comments,power.num.models)
+for(i in seq(power.starting.num.days/power.increase.num.days.by, power.max.num.days/power.increase.num.days.by)){
+  sample.size <- i*power.increase.num.days.by
+  p.analyses <- rbind(p.analyses, power.analysis(i,i*power.increase.num.days.by,power.mean.ctl.comments,power.mean.treat.comments,power.num.models))
+}
 # 
-# ggplot(p.analyses, aes(sample.size, pct.significant, color=pct.significant>=80)) +
-#   geom_point() +
-#   scale_y_continuous(breaks = round(seq(0,100, by = 10),1)) +
-#   theme_bw(base_size = 15, base_family = "Helvetica") +
-#   ggtitle("Total number of comments")
+ggplot(p.analyses, aes(sample.size, pct.significant, color=pct.significant>=80)) +
+  geom_point() +
+  scale_y_continuous(breaks = round(seq(0,100, by = 10),1)) +
+  theme_bw(base_size = 15, base_family = "Helvetica") +
+  ggtitle("Total number of comments")
 
 # ### number of newcomer comments
 power.mean.ctl.newcomer <- 10
@@ -176,4 +202,5 @@ ggplot(p.analyses, aes(sample.size, pct.significant, color=pct.significant>=80))
   geom_point() +
   scale_y_continuous(breaks = round(seq(0,100, by = 10),1)) +
   theme_bw(base_size = 15, base_family = "Helvetica") +
-  ggtitle("Total number of newcomer comments")
+  ggtitle("Total number of newcomer comments") #+ 
+  #annotate("text", x = 200, y = 25, label = "Using ")
